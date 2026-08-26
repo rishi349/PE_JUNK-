@@ -174,4 +174,42 @@ This log tracks all actions, modifications, and git operations performed on the 
 - Pushed all 4 commits to `origin/main` (GitHub: `rishi349/PINN`).
 
 ---
+
+## Sep 12, 2026 — Month 4 Code Implementation Session
+
+### 23. Removed Misplaced Logs Folder from PINN
+- A `PINN/logs/` subfolder was accidentally created during the session.
+- Deleted: `rm -rf PINN/logs/`. Logs belong only in `BASHI+OK/logs/`.
+
+### 24. Workspace Rules File Created
+- Created `.agents/rules/workspace_rules.md` to enforce folder structure, git policy, and log maintenance rules permanently.
+- Key rules documented:
+  - Logs → `logs/` only, never inside `PINN/`
+  - Code → `PINN/` only
+  - Plan docs → read-only reference, no git
+  - **NEVER push to any git remote without explicit user instruction**
+
+### 25. Month 4 Code Implementation (commits pending — NOT pushed)
+- Implemented all 8 components identified in the Month 4 implementation plan:
+
+  **New files created:**
+  - `src/models/naive_baselines.py` — Baseline 0a (ZeroDisplacementBaseline) and 0b (GlobalStatsBaseline)
+  - `src/evaluation/rouse_modes.py` — Full Rouse mode analysis pipeline (projection, autocorrelation, τ_p extraction, τ_p ~ 1/p² check)
+  - `src/evaluation/msd.py` — MSD functions g₁/g₂/g₃, exponent fitting, diffusion coefficient estimation
+  - `src/evaluation/temperature_check.py` — FDT temperature check for simulator and rollout validation
+  - `scripts/generate_all_arms.py` — Multi-arm data generation (N=30/50/100/200) with resume support
+  - `tests/test_naive_baselines.py` — 12 tests
+  - `tests/test_rouse_modes.py` — 14 tests
+  - `tests/test_msd.py` — 15 tests
+  - `tests/test_temperature_check.py` — 14 tests (includes leakage assertion tests)
+
+  **Modified files:**
+  - `src/training/losses.py` — Implemented real `bond_length_penalty()` (was a TODO stub returning 0); added `excluded_volume_penalty()`
+  - `src/data/dataset.py` — Added `assert_no_leakage()` function; called automatically in `process()`
+  - `tests/test_training.py` — Updated `test_bond_length_penalty_placeholder` → `test_bond_length_penalty_real_implementation`
+
+- **Test results: 152 passed, 0 failed** (up from 90 before this session)
+- **Git status:** All changes are local only. No commits made. No push. Waiting for explicit user instruction.
+
+---
 *End of Log. Future actions will be appended here.*
