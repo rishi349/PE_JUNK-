@@ -42,11 +42,23 @@
   - [x] Create `coding_agent_brief.md` with 7 concrete implementation tasks from literature
   - [x] Confirm: no additional Gedde-specific coding tasks needed
 
-- [ ] **Implement Physics Enhancements (from coding_agent_brief.md)**
-  - [ ] Task 1: `src/evaluation/rouse_modes.py` — Rouse mode analysis
-  - [ ] Task 2: `src/evaluation/msd.py` — g₁, g₂, g₃ MSD subdiffusion functions
-  - [ ] Task 3: `src/evaluation/scaling.py` — Finite-size ν_eff for scaling study
-  - [ ] Task 4: `src/training/losses.py` — Rouse mode consistency loss (ablation only)
-  - [ ] Task 5: `src/evaluation/temperature_check.py` — FDT temperature check
+- [x] **Implement Physics Enhancements (from coding_agent_brief.md)**
+  - [x] Task 1: `src/evaluation/rouse_modes.py` — Rouse mode analysis
+  - [x] Task 2: `src/evaluation/msd.py` — g₁, g₂, g₃ MSD subdiffusion functions
+  - [x] Task 3: `src/evaluation/scaling.py` — Finite-size ν_eff for scaling study
+  - [ ] Task 4: `src/training/losses.py` — Rouse mode consistency loss (ablation only, Month 7)
+  - [x] Task 5: `src/evaluation/temperature_check.py` — FDT temperature check
   - [ ] Task 6: Report text — Rouse/Zimm/solvent-quality framing (Month 12)
   - [ ] Task 7: `src/evaluation/rollout.py` — Rouse mode spectrum rollout eval metric
+
+- [x] **Month 4 Code Gate Items**
+  - [x] `src/models/naive_baselines.py` — Baselines 0a (zero) & 0b (global stats)
+  - [x] `src/data/dataset.py` — `assert_no_leakage()` automated split check
+  - [x] `src/training/losses.py` — Real `bond_length_penalty()` + `excluded_volume_penalty()`
+  - [x] `scripts/generate_all_arms.py` — Multi-arm N=30/50/100/200 generation script
+  - [x] Tests for all new modules (152 passing, 0 failed)
+  - [ ] Production data synced from teammate's laptop
+
+- [x] **Workspace Rules**
+  - [x] `.agents/rules/workspace_rules.md` created — folder structure, git policy enforced
+  - [x] Deleted misplaced `PINN/logs/` subfolder
