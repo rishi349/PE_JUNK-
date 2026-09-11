@@ -88,8 +88,7 @@ BASHI+OK/
 │   ├── recommended_tools_and_integrations.md
 │   └── books/
 │       ├── de_gennes_key_concepts.md
-│       ├── gedde_key_concepts.md
-│       └── coding_agent_brief.md
+│       └── gedde_key_concepts.md
 ├── plan docs/                     ← Read-only reference (no git)
 │   └── polymer_gnn_1_year_execution_plan.md
 └── .agents/rules/workspace_rules.md
@@ -168,5 +167,4 @@ BASHI+OK/
 1. `plan docs/polymer_gnn_1_year_execution_plan.md` — master reference
 2. `PINN/project_contract.md` — locked decisions
 3. `logs/task.md` — current TODO state
-4. `logs/books/coding_agent_brief.md` — 7 physics tasks from literature
-5. `logs/activity_log.md` — full history of what was done
+4. `logs/activity_log.md` — full history of what was done
