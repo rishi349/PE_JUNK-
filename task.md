@@ -62,3 +62,10 @@
 - [x] **Workspace Rules**
   - [x] `.agents/rules/workspace_rules.md` created — folder structure, git policy enforced
   - [x] Deleted misplaced `PINN/logs/` subfolder
+
+- [x] **Tools and Integrations Setup**
+  - [x] Integrate **W&B Free Tier** in `src/training/trainer.py`
+  - [x] Integrate **Optuna HPO** via `scripts/hpo_optuna.py`
+  - [x] Create publication-quality plotting utilities (Seaborn + Plotly) in `src/evaluation/plotting.py`
+  - [x] Update `environment.yml` with wandb, optuna, seaborn, plotly, py3Dmol, e3nn, tensorboard
+  - [x] Finalize `logs/recommended_tools_and_integrations.md` with locked decisions

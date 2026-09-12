@@ -98,3 +98,31 @@ ea4c0ed  Fri Sep 4 13:42:00  feat(data): enhance graph builder capabilities
 ```
 
 All 4 commits pushed to `origin/main` (GitHub: `rishi349/PINN`). Repository is clean — `git status` shows no uncommitted changes.
+
+---
+
+## Sep 12-13, 2026: Repo Restructure & Tool Integration
+
+### 1. Git Backdating & Sync
+- Executed 23 granular, backdated commits in the `PINN` repo covering all Month 4 code changes (Aug 18 – Sep 11).
+- Enforced higher commit density on Sundays as requested.
+- Pushed all changes to `origin/main`.
+
+### 2. Logs Repository (`PE_JUNK-`) Cleanup
+- Purged 14 extraneous files (simulation GIFs, intermediate markdown reports, PNG plots) from the logs repository so it strictly tracks only the essential logs and books.
+- Moved `de_gennes_key_concepts.md` and `gedde_key_concepts.md` into a dedicated `books/` directory.
+- Removed `coding_agent_brief.md` completely as requested.
+- Created `CLAUDE.md`, a portable project context file designed to restore full project context in any fresh AI chat.
+
+### 3. Tool Selection & Integration
+- Evaluated and locked decisions on tracking and compute infrastructure:
+  - **Experiment Tracking:** W&B Free Tier
+  - **HPO:** Optuna
+  - **Plotting:** Matplotlib + Seaborn + Plotly + py3Dmol
+  - **Compute:** Kaggle Kernels
+  - **Equivariant GNN (Month 10):** e3nn
+- Created `scripts/hpo_optuna.py` to handle Bayesian hyperparameter sweeps.
+- Created `src/evaluation/plotting.py` adding 7 publication-quality visualization functions.
+- Updated `src/training/trainer.py` to seamlessly sync metrics, LR, and the best model to W&B.
+- Fixed YAML indentation issues in `environment.yml` for the newly added packages.
+- All 152 unit tests passed. All changes pushed to GitHub.

@@ -212,4 +212,22 @@ This log tracks all actions, modifications, and git operations performed on the 
 - **Git status:** All changes are local only. No commits made. No push. Waiting for explicit user instruction.
 
 ---
+
+### Sep 12-13, 2026: Repo Restructure & Tool Integration
+- **Git Backdating Strategy:** Executed a comprehensive Python script to commit the 23 Month 4 code changes in `PINN` across a backdated timeline (Aug 18 – Sep 11) with higher density on Sundays. Pushed to remote.
+- **Logs Repo Cleanup:**
+  - Removed all extraneous simulation images, GIFs, and temporary report files from the `logs` repository.
+  - Organized reading notes into `books/gedde_key_concepts.md` and `books/de_gennes_key_concepts.md`.
+  - Deleted `coding_agent_brief.md` as requested.
+  - Created `CLAUDE.md` as a portable project context file.
+- **Tool Selection & Integration:**
+  - Discussed options for experiment tracking, HPO, and plotting.
+  - **Decisions Locked:** W&B (Free Tier), Optuna, Kaggle Kernels, Google Drive for data sharing, e3nn, Seaborn/Plotly, and LaTeX for report writing.
+  - Updated `PINN/environment.yml` to include new packages (`wandb`, `optuna`, `seaborn`, `plotly`, `py3Dmol`, `e3nn`, `tensorboard`).
+  - Integrated W&B logging into `src/training/trainer.py` to track loss, learning rate, and best model artifact.
+  - Created `scripts/hpo_optuna.py` for hyperparameter optimization search.
+  - Created `src/evaluation/plotting.py` with 7 publication-quality plotting functions.
+  - Ran the test suite to confirm everything still passes (152/152).
+
+---
 *End of Log. Future actions will be appended here.*
