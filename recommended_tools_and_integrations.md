@@ -1,120 +1,104 @@
-# Recommended Tools & Integrations
+# Recommended Tools & Integrations — DECISIONS LOCKED
 
 > Companion file to `polymer_gnn_1_year_execution_plan.md` (§0).
-> Lists tools found during research that are **not** required by the plan but worth a team discussion before committing to any of them.
-> Updated: Sep 2026
+> **Decisions finalised:** Sep 13, 2026.
 
 ---
 
-## Experiment Tracking
+## ✅ Selected & Integrated
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **Weights & Biases (W&B)** | Track runs, hyperparams, metrics, plots | Free tier. Recommended — set up in Month 1 before any training. W&B `wandb.log()` is a one-liner to add. |
-| MLflow | Alternative to W&B, fully local | Good if you don't want cloud upload. More setup. |
-| TensorBoard | Lightweight, built into PyTorch | Fine for quick loss curves; lacks the run-comparison features of W&B. |
-
-**Recommendation:** W&B free tier. Create account now at wandb.ai — retrofitting to 50 runs in Month 6 is painful.
-
----
-
-## Hyperparameter Optimization (HPO)
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **Optuna** | Bayesian HPO, tree-structured Parzen estimator | `pip install optuna`. Used in Month 6. Integrates with W&B. |
-| Ray Tune | Distributed HPO | Overkill for Colab; Optuna is simpler. |
-| Ax / BoTorch | Bayesian optimization from Facebook | More complex API; skip unless Optuna proves insufficient. |
-
-**Recommendation:** Optuna. Simple API, good docs, free.
+| Category | Tool | Status | Where |
+|----------|------|--------|-------|
+| Experiment Tracking | **W&B Free Tier** | ✅ Integrated | `src/training/trainer.py` — pass `wandb_enabled=True` |
+| HPO | **Optuna** | ✅ Integrated | `scripts/hpo_optuna.py` — Bayesian search, saves best to YAML |
+| GNN Library | **PyTorch Geometric** | ✅ Already in use | `src/models/`, `src/data/` |
+| Equivariant GNN | **e3nn** | ✅ In `environment.yml` | Install ready for Month 10 EGNN |
+| Simulator | **NumPy (custom)** | ✅ Built | `src/simulator/numpy_simulator.py` |
+| Data Storage | **NPZ (NumPy)** | ✅ In use | `data/raw/*.npz` |
+| Data Sharing | **Google Drive** | ✅ Decided | Zip and share link — zero setup |
+| Compute (primary) | **Kaggle Kernels** | ✅ Decided | Free 30 GPU h/week |
+| Compute (later) | **University HPC** | ⏳ Upgrade path | For Month 9–11 sweeps if needed |
+| Plotting (static) | **Matplotlib + Seaborn** | ✅ Integrated | `src/evaluation/plotting.py` |
+| Plotting (interactive) | **Plotly** | ✅ Integrated | `src/evaluation/plotting.py` |
+| Plotting (3D) | **py3Dmol** | ✅ In `environment.yml` | For chain structure visualisation |
+| Report | **LaTeX + Overleaf** | ✅ Decided | Month 12 |
+| Local fallback viewer | **TensorBoard** | ✅ In `environment.yml` | Backup for offline viewing |
 
 ---
 
-## GNN Libraries
+## ❌ Not Selected (and why)
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **PyTorch Geometric (PyG)** | Graph neural networks | Already in use. `torch_geometric` |
-| DGL | Alternative GNN library | Not needed alongside PyG. |
-| e3nn | Equivariant neural networks | Needed for Month 10 EGNN. Install separately: `pip install e3nn` |
-| MACE | Equivariant message-passing | Alternatively usable for equivariant baseline |
-
----
-
-## Simulation / MD Tools (Reference)
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **NumPy simulator** | Custom overdamped Langevin | ✅ Already built — `src/simulator/numpy_simulator.py` |
-| HOOMD-blue | GPU-accelerated MD | Optional for large-scale data generation if Colab GPU is available. `hoomd_simulator.py` stub exists. |
-| LAMMPS | General MD, supports KG model | CPU/GPU. Overkill unless you need thousands of long trajectories. |
-| OpenMM | Python-friendly MD | Good Python API. Alternative to HOOMD if needed. |
-
----
-
-## Data Storage
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **NPZ (NumPy)** | Compact trajectory storage | ✅ Currently using. Default for `generate_data.py` |
-| HDF5 / h5py | Better for very large datasets | Consider switching if data/raw > 10 GB |
-| **Git LFS** | Large files in git | Use `git lfs track "data/raw/*.npz"` to share data via GitHub |
-| Google Drive | Simplest team data sharing | Zero setup; just zip and share the link |
-
-**Current recommendation:** Share data via Google Drive zip until you have >10 GB.
+| Tool | Reason |
+|------|--------|
+| MLflow | Unnecessary with W&B; more setup for less features |
+| Ray Tune | Overkill for Kaggle — Optuna is simpler |
+| Ax / BoTorch | Complex API; skip unless Optuna is insufficient |
+| DGL | Not needed alongside PyG |
+| MACE | e3nn is more flexible for custom architectures |
+| HOOMD-blue | NumPy simulator is sufficient for our scale |
+| LAMMPS | Overkill for single-chain N=30–200 |
+| OpenMM | Unnecessary alongside custom NumPy simulator |
+| HDF5 | NPZ is fine until data > 10 GB |
+| Git LFS | Google Drive is simpler for team sharing |
+| Google Colab Pro | Kaggle is free; upgrade path exists to Uni HPC |
+| Lightning.ai | Kaggle is sufficient |
+| Quarto | LaTeX + Overleaf is standard for academic reports |
+| TensorFlow/Keras | Stick with PyTorch |
 
 ---
 
-## Compute (GPU)
+## How to Use the Integrations
 
-| Platform | Notes |
-|----------|-------|
-| **Google Colab Pro** | ~$10–50/month. Recommended for Months 5–11. |
-| Kaggle Kernels | Free 30 GPU h/week. Good backup. |
-| Lightning.ai | Free tier with GPU, good PyTorch integration |
-| University HPC | Check with supervisor — if available, use this for Month 9–11 sweeps |
+### W&B Experiment Tracking
+```python
+# In your training script:
+trainer = Trainer(
+    model=model,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    config=config,
+    wandb_enabled=True,           # ← toggle this
+    wandb_project='polymer-gnn',
+    wandb_run_name='baseline-v1',
+)
+history = trainer.train()
+# → loss curves, LR, gradients, and best model auto-logged to wandb.ai
+```
 
-**Budget rule from plan:** Spend almost nothing on GPU during Months 1–4 (CPU simulation only). Concentrate budget in Months 5–11 for training.
+### Optuna HPO
+```bash
+# Quick test (5 trials, 10 epochs each):
+python scripts/hpo_optuna.py --n-trials 5 --epochs 10
+
+# Full search with W&B:
+python scripts/hpo_optuna.py --n-trials 50 --wandb
+
+# Resume from SQLite:
+python scripts/hpo_optuna.py --study-name my-study --storage sqlite:///hpo.db
+```
+
+### Plotting
+```python
+from src.evaluation.plotting import (
+    plot_training_curves,      # train/val loss
+    plot_rollout_msd,          # g1/g2/g3 log-log
+    plot_rouse_spectrum,       # tau_p vs p
+    plot_bond_length_histogram,# bond length distribution
+    plot_model_comparison,     # grouped bar chart
+    plot_hpo_importance,       # Optuna importance
+    plot_rollout_stability,    # metric drift over rollout
+)
+```
 
 ---
 
-## Plotting & Visualization
-
-| Tool | Notes |
-|------|-------|
-| **Matplotlib** | ✅ Already used in scripts/visualize.py |
-| Seaborn | Prettier statistical plots. Worth adding for report figures. |
-| Plotly | Interactive. Good for rollout visualization. |
-| py3Dmol | 3D chain structure visualization |
-
----
-
-## Report Writing
-
-| Tool | Notes |
-|------|-------|
-| LaTeX + Overleaf | ✅ Recommended for Month 12 report |
-| Quarto | Notebook-to-paper pipeline |
-| arXiv | Target venue for final report (physics/ML workshop or preprint) |
-
----
-
-## Key Papers to Read (for the team)
+## Key Papers (for reference)
 
 | Paper | Why |
 |-------|-----|
-| Sanchez-Gonzalez et al. (2020) "Learning to Simulate Complex Physics with Graph Networks" | The GNS baseline — training-time noise injection (ablation row Month 9) |
-| Kremer & Grest (1990) J. Chem. Phys. 92, 5057 | The KG model — our exact simulation setup |
-| Pfaff et al. (2021) "Learning Mesh-Based Simulation with Graph Networks" | ICLR 2021. Rollout stability tricks. |
+| Sanchez-Gonzalez et al. (2020) | GNS baseline — training-time noise injection (Month 9) |
+| Kremer & Grest (1990) J. Chem. Phys. 92, 5057 | The KG model — our exact setup |
+| Pfaff et al. (2021) ICLR | Rollout stability tricks |
 | Batatia et al. (2022) MACE | Equivariant architecture (Month 10) |
-| de Gennes (1979) *Scaling Concepts in Polymer Physics* | **Read Ch. IV, VI, VII** — Rouse model, scaling, dynamics |
-| Gedde (1999) *Polymer Physics* | Ch. 6 (molten state), Ch. 2 (chain conformations) |
-
----
-
-## Not Recommended / Skip
-
-- **TensorFlow/Keras** — Stick with PyTorch throughout
-- **HOOMD in Month 1–4** — NumPy simulator is sufficient and easier to debug
-- **Full reptation/entanglement models** — Out of scope (single chain, no entanglements at N=30)
-- **Shear stress / rheology** — Not in scope (no applied flow field, equilibrium only)
+| de Gennes (1979) *Scaling Concepts* | Rouse model, scaling, dynamics |
+| Gedde (1999) *Polymer Physics* | Molten state, chain conformations |
