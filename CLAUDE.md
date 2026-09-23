@@ -22,7 +22,6 @@ A GNN trained to predict the next-step displacement of beads in a coarse-grained
 - **Git repos:**
   - Code → `github.com/rishi349/PINN`
   - Logs → `github.com/rishi349/PE_JUNK-`
-  - Professor → `github.com/SiddharthaReddy018/professor`
 
 ---
 
