@@ -231,3 +231,92 @@ This log tracks all actions, modifications, and git operations performed on the 
 
 ---
 *End of Log. Future actions will be appended here.*
+
+---
+
+## Sep 23, 2026 — Professor Analysis Scripts & PINN Sync
+
+### Context
+Professor requested two specific analysis plots (via WhatsApp, 18/09/26):
+1. **Rg² vs N** — radius of gyration squared vs chain length (Flory scaling)
+2. **Average force vs extension** — force-extension curve for a polymer chain
+
+### Decision Analysis
+
+Before building, evaluated whether these plots were needed for trajectory validation:
+
+| Question | Answer |
+|---|---|
+| Are these needed to validate `trajectory_0000.json`? | **No** — existing `verify_production.py`, `diagnose_equilibration.py`, and `verify_remaining.py` already comprehensively validate the data |
+| What are they for? | **Simulator characterization** — useful for papers/presentations to show the model reproduces known polymer physics |
+| Can we extract them from existing data? | **No** — Rg² vs N requires multiple chain lengths (only N=30 exists); force-extension requires constrained MD (only free runs exist) |
+| Are full runs feasible in pure NumPy? | **Partially** — Rg² at large N (>50) is impractical (O(N²) pair forces, days of compute). Force-extension at N=30 is feasible (~2-3 hrs). Quick tests work for all. |
+
+**Decision:** Build all three scripts, run quick tests to validate physics, but note that publication-quality Rg² vs N should use HOOMD-blue (GPU).
+
+### Scripts Created
+
+#### 1. `scripts/plot_rg2_vs_N.py`
+- Sweeps chain lengths N, runs equilibrium MD per N, fits `⟨Rg²⟩ ∝ N^(2ν)`
+- Added `--max_steps_per_N` flag after first test took 15+ min (Rouse time τ_R = N² scales badly)
+- **Quick test result:** 2ν = 1.365 ± 0.019 (R²=0.9994). Exponent above SAW theory (1.176) because burn-in was capped at 2% of Rouse time.
+
+#### 2. `scripts/plot_force_extension.py`
+- Clamps end beads at fixed z, measures tension via constrained overdamped MD
+- **Three bugs found and fixed during testing:**
+  - **Bug 1:** Init spacing z/(N-1) < σ at small z → WCA force blowup. Fix: `spacing = max(z/(N-1), 1.05·σ)`
+  - **Bug 2:** `abs()` on tension hid compressive vs tensile sign. Fix: use signed projection `0.5*(f[0,0] - f[-1,0])`
+  - **Bug 3:** z starting at 10% L_c = 2.9σ for N=30 is unphysical (chain compressed to 10% of contour length). Fix: `z_min = max(30%·L_c, N·σ/2)`
+- **Quick test result:** Forces positive and increasing 1.37 → 6.52 ε/σ from 52%→95% L_c
+
+#### 3. `scripts/plot_msd.py`
+- Extracts monomer MSD g1(t) and COM MSD g3(t) **directly from existing trajectory data** — no new simulation needed
+- Runs in **4 seconds** on all 10,000 frames
+- **Results:** g1 exponent = 0.621 ± 0.002 (Rouse crossover between 0.5 and 1.0), g3 exponent = 0.917 ± 0.005 (diffusive, expected 1.0)
+- MSD is the most useful of the three for trajectory validation — it confirms the integrator dynamics are correct
+
+#### 4. `configs/short.yaml`
+- Copy of `default.yaml` with T_steps and n_burnin divided by 100 for quick pipeline testing
+
+### Files Synced: `professor/PINN/` → `BASHI+OK/PINN/`
+
+**Modified files (bug fixes from earlier sessions):**
+
+| File | Change |
+|---|---|
+| `scripts/diagnose_equilibration.py` | Seed fix: `base_seed` instead of `base_seed + 999` for exact trajectory alignment |
+| `scripts/verify_production.py` | Seed fix + smarter bond distribution KS-test pass logic (absolute mean/std diff < 0.005σ counts as pass even if p < 0.01) + y-axis scale fix for failure bar chart |
+| `scripts/visualize.py` | Added `--trajectory`, `--max_frames`, `--continuous` args for loading existing JSON data instead of re-simulating |
+| `src/simulator/hoomd_simulator.py` | GPU-first with CPU fallback (was CPU-only) |
+
+**New files copied:**
+
+| File | Purpose |
+|---|---|
+| `scripts/plot_rg2_vs_N.py` | Rg² vs N analysis (professor request) |
+| `scripts/plot_force_extension.py` | Force vs extension analysis (professor request) |
+| `scripts/plot_msd.py` | MSD vs time from existing trajectory |
+| `configs/short.yaml` | Quick-test config (100× fewer steps) |
+
+**Files NOT copied (intentionally):**
+- `professor/kaggle_notebook.ipynb` — Kaggle-specific, not part of main PINN codebase
+- `professor/polymer_simulation_kaggle.ipynb` — same
+- `professor/activity_log-professor.md` — professor-specific log, stays in professor/
+
+**Files only in `BASHI+OK/PINN/` (untouched):**
+- `scripts/evaluate.py`, `scripts/train.py`, `scripts/hpo_optuna.py` — training/eval pipeline
+- `src/models/`, `src/training/`, `src/data/` — GNN model code
+- `CONTRIBUTING.md`, `LICENSE`, `project_contract.md` — repo docs
+
+### Verification
+- `diff -rq` between both PINN directories confirms all shared files are identical
+- Only remaining differences are files that correctly exist in only one copy (train/eval scripts in top-level, notebooks in professor)
+
+### Plots Generated
+
+| Plot | File | Source | Runtime |
+|---|---|---|---|
+| Rg² vs N (quick) | `plots/rg2_vs_N_quick.png` | Quick sim (capped 30k steps/N) | ~8 min |
+| Force vs extension (quick) | `plots/force_extension_quick.png` | Constrained MD (10k equil + 20k sample × 10 points) | ~30 sec |
+| MSD vs time | `plots/msd_vs_time.png` | Existing `trajectory_0000.json` (10k frames) | **4 sec** |
+
