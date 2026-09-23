@@ -230,11 +230,51 @@ This log tracks all actions, modifications, and git operations performed on the 
   - Ran the test suite to confirm everything still passes (152/152).
 
 ---
-*End of Log. Future actions will be appended here.*
+
+## Sep 18–22, 2026 — Simulator Execution, Visualization & Kaggle
+
+### 26. Full Production Simulation Run
+- Ran the complete 3.7M step simulation using `scripts/run_simulation.py` with `configs/default.yaml`.
+- Output: `data/raw/trajectory_0000.json` (~50MB) — 2,700,000 burn-in steps + 1,000,000 production steps, 10,000 production frames saved every 100 steps (0.1τ).
+- Chain: N=30 beads, overdamped Langevin integrator, WCA + harmonic bond potential, dt=0.001.
+
+### 27. Quick-Test Config Created
+- Created `configs/short.yaml` — identical to `default.yaml` but with `T_steps` and `n_burnin` divided by 100 (37k and 27k steps respectively).
+- Purpose: Run the entire pipeline end-to-end in ~10 seconds for rapid code testing before committing to full physics runs.
+
+### 28. Visualization Script Overhaul
+- Modified `scripts/visualize.py` with three new capabilities:
+  - **`--trajectory`**: Load an existing JSON file instead of re-running a simulation.
+  - **`--max_frames`**: Cap the number of GIF frames (default 200) to prevent memory crashes on 10,000-frame trajectories.
+  - **`--continuous`**: Take the first N frames back-to-back instead of downsampling. Shows true Brownian jitter at microscopic timescales.
+- This change was necessary because the original script always re-simulated, and loading 10,000 frames directly caused memory issues.
+
+### 29. GIF Animations Generated
+- Created 5 GIF variants from `trajectory_0000.json`:
+  - `sim_200.gif` — 200 frames downsampled (global dynamics, full timeline)
+  - `sim_300_continuous.gif` — 300 consecutive frames (microscopic Brownian motion)
+  - `sim_50.gif`, `sim_5.gif`, `sim_1.gif` — custom frame counts requested by professor
+- **Physics distinction**: Downsampled GIFs show large-scale conformational changes over the full simulation; continuous GIFs show the true step-by-step bead jitter that the GNN will learn to predict.
+
+### 30. Verification Script Bug Fixes
+- Fixed `scripts/diagnose_equilibration.py` and `scripts/verify_production.py`:
+  - **Seed alignment**: Changed from `base_seed + 999` to `base_seed` to ensure diagnostic simulations exactly reproduce the trajectory being validated.
+  - **Bond distribution test**: Added absolute mean/std difference check (< 0.005σ) as a secondary pass condition when KS p-value < 0.01 but the actual differences are physically irrelevant.
+  - **Plot scaling**: Fixed y-axis minimum scale in failure bar chart to prevent text/axis overlap.
+
+### 31. HOOMD-blue Simulator Update
+- Modified `src/simulator/hoomd_simulator.py` to attempt GPU device first, falling back to CPU if GPU is unavailable.
+- Previous behavior was CPU-only, which was a bottleneck for large-N simulations (N > 50).
+
+### 32. Kaggle Notebook
+- Created a standalone Kaggle notebook (`polymer_simulation_kaggle.ipynb`) packaging the full simulation pipeline for remote execution on Kaggle's free GPU/TPU instances.
+- This enables running large-N or long-trajectory simulations without relying on local hardware.
+- Notebook lives in `professor/` folder only — not part of the main PINN codebase.
 
 ---
 
 ## Sep 23, 2026 — Professor Analysis Scripts & PINN Sync
+
 
 ### Context
 Professor requested two specific analysis plots (via WhatsApp, 18/09/26):

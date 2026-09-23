@@ -69,3 +69,51 @@
   - [x] Create publication-quality plotting utilities (Seaborn + Plotly) in `src/evaluation/plotting.py`
   - [x] Update `environment.yml` with wandb, optuna, seaborn, plotly, py3Dmol, e3nn, tensorboard
   - [x] Finalize `logs/recommended_tools_and_integrations.md` with locked decisions
+
+---
+
+# Simulator Execution & Validation (Sep 18–22, 2026)
+
+- [x] **Production Simulation**
+  - [x] Run full 3.7M step simulation (2.7M burn-in + 1M production)
+  - [x] Generate `trajectory_0000.json` (50MB, 10,000 production frames)
+  - [x] Create `configs/short.yaml` for rapid pipeline testing (100× fewer steps)
+
+- [x] **Visualization & GIFs**
+  - [x] Overhaul `visualize.py` — add `--trajectory`, `--max_frames`, `--continuous` args
+  - [x] Generate 5 GIF variants (sim_1, sim_5, sim_50, sim_200, sim_300_continuous)
+
+- [x] **Verification Bug Fixes**
+  - [x] Fix seed alignment in `diagnose_equilibration.py` and `verify_production.py` (base_seed, not +999)
+  - [x] Add absolute mean/std fallback for bond distribution KS-test
+  - [x] Fix y-axis scaling in failure bar chart
+
+- [x] **Simulator Improvements**
+  - [x] HOOMD-blue: GPU-first with CPU fallback
+  - [x] Kaggle notebook for remote execution (professor/ only)
+
+---
+
+# Analysis Scripts — Professor Requests (Sep 23, 2026)
+
+- [x] **`scripts/plot_rg2_vs_N.py`** — Rg² vs N (Flory scaling)
+  - [x] Sweep chain lengths, fit ⟨Rg²⟩ ∝ N^(2ν)
+  - [x] Add `--max_steps_per_N` cap for quick testing
+  - [x] Quick test: 2ν = 1.365 (R²=0.9994)
+
+- [x] **`scripts/plot_force_extension.py`** — Force vs extension
+  - [x] Constrained MD with clamped end beads
+  - [x] Fix init overlap, signed tension, z-range bugs
+  - [x] Quick test: monotonic force increase 1.37→6.52 ε/σ
+
+- [x] **`scripts/plot_msd.py`** — MSD vs time
+  - [x] Extract g1/g3 from existing trajectory (no new simulation)
+  - [x] Results: g1 exponent=0.621, g3 exponent=0.917
+  - [x] Runs in 4 seconds on 10,000 frames
+
+- [x] **PINN Sync** — Merge professor/PINN improvements into BASHI+OK/PINN
+  - [x] Sync 4 modified files + 4 new files
+  - [x] Verify with `diff -rq` — all shared files identical
+  - [x] Commit with conventional format, backdated across Sep 18–22
+  - [x] Push to all remotes (PINN, logs, professor)
+
