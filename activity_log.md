@@ -360,3 +360,47 @@ Before building, evaluated whether these plots were needed for trajectory valida
 | Force vs extension (quick) | `plots/force_extension_quick.png` | Constrained MD (10k equil + 20k sample × 10 points) | ~30 sec |
 | MSD vs time | `plots/msd_vs_time.png` | Existing `trajectory_0000.json` (10k frames) | **4 sec** |
 
+
+
+---
+
+## Sep 27–28, 2026 — Forensic Audit & Kaggle Optimization
+
+### Context
+User requested a rigorous "forensic audit" of the polymer physics outputs, as well as modifications to make the analysis reproducible and massively accelerated on Kaggle GPUs. The goal was to uncover "the truth" of the physics discrepancies (e.g., Flory exponent $\nu > 0.588$) rather than optimizing the simulator to fit expectations.
+
+### Actions Taken & Files Modified
+#### 1. GPU Acceleration via `jax.lax.scan`
+- **What was wrong:** The original Python `for` loops driving the simulation steps were excessively slow and spent most of their time transferring data between CPU and GPU.
+- **What it changed to:** Rewrote the core simulation loop in `forensic_audit_kaggle.py` using `jax.lax.scan`. This fuses the harmonic bonded forces, WCA non-bonded forces, and Euler-Maruyama integration into a single XLA-compiled kernel, entirely eliminating Python overhead.
+- **Purpose:** Massive speedup, allowing us to simulate large N chains ($N=40, 55, 75, 100$) in seconds rather than hours, making real-time validation on Kaggle possible.
+
+#### 2. Ten-Step Rigorous Physics Audit Implementation
+- **What was done:** Implemented exactly 10 physics audit tasks requested by the user in `forensic_audit_kaggle.py`.
+- **Key implementations:**
+  - Fixed $D_{cm}$ units (dividing by `FRAME_DT`).
+  - Separated $\tau_R$ measurement from the $N^2$ scheduling assumption.
+  - Measured true local MSD exponent $\alpha(t)$ before crossover contamination.
+  - Added robust finite-size scaling tests for the Flory exponent $\nu$ across cutoffs (N>=5 up to N>=30).
+  - Added burn-in sufficiency test ($3\times, 5\times, 10\times \tau_R$) to rule out memory effects.
+  - Measured Persistence Length ($L_p$) directly from bond vectors instead of a hardcoded theoretical curve.
+  - Corrected contour length ($L_c$) in force-extension to use actual measured bond lengths.
+  - Implemented autocorrelation-corrected standard errors (scaling up variance for highly correlated measurements).
+
+#### 3. Execution Environment & Variable Scope Fixes
+- **What was wrong:** The notebook crashed on Kaggle with `NameError: name 'BURNIN_MULT' is not defined` when running Step 6, and a similar error for `N_VALUES`. This occurred because Kaggle's `/kaggle/working` directory check was throwing a `FileNotFoundError` mid-cell when `GENERATE_NEW_DATA=False`, erasing all variables defined below it.
+- **What it changed to:** Restructured the Configuration cell. Moved every single physical and configuration parameter (e.g., `K_BOND`, `DT`, `N_VALUES`, `BURNIN_MULT`) to the absolute top of the cell.
+- **Purpose:** Guaranteed that parameters are fully loaded into the Python environment even if dataset path resolution fails later in the block.
+
+#### 4. Notebook Auto-Builder Script
+- **What was done:** Created a Python tool (AST parser) to automatically parse the `forensic_audit_kaggle.py` script and split it into a fully structured Kaggle-ready `forensic_audit_kaggle.ipynb` notebook.
+- **Purpose:** Allowed us to edit the physics logic robustly in a `.py` file while seamlessly outputting a ready-to-run `.ipynb` for the user to upload to Kaggle.
+
+#### 5. Validation & "The Truth"
+- **Findings:** The script successfully generated an honest `forensic_audit_report.json`.
+- **Results exposed:**
+  - $\alpha$ is honestly measured at $\sim 0.657$.
+  - $\nu$ remains stubbornly flat at $\sim 0.65 - 0.66$ across all N cutoffs.
+  - Burn-in was proved completely sufficient ($R_g^2$ is flat across multipliers).
+  - Theoretical discrepancies were heavily flagged as `[????] [E] Unresolved` rather than swept under the rug.
+
