@@ -404,3 +404,163 @@ User requested a rigorous "forensic audit" of the polymer physics outputs, as we
   - Burn-in was proved completely sufficient ($R_g^2$ is flat across multipliers).
   - Theoretical discrepancies were heavily flagged as `[????] [E] Unresolved` rather than swept under the rug.
 
+
+
+---
+
+## Session: 2026-11-14 to 2026-11-18
+
+### Summary
+Post-Verlet-optimization comprehensive audit and new GPU-accelerated Kaggle notebook.
+
+### 1. Work Completed
+
+**Verlet Optimization Audit:**
+- Read all 3 existing Kaggle test notebooks + ZIP results (commit 6ade6b6).
+- Confirmed Verlet neighbor-list optimization (commit 462d5ef) is physics-neutral (performance-only).
+- Gaps found: Verlet correctness never tested on Kaggle GPU, bvar only at non-production dt=0.0005, underdamped simulator not wired through config.
+
+**Audit Report artifact:**
+- Created `audit_report.md` with full PASS/FAIL table for all 3 existing notebooks.
+- REPO production path (harmonic + dt=0.001) passes all critical checks at 6ade6b6.
+- FENE notebook failures = design mismatch, not production bugs.
+
+**New Kaggle Notebook:**
+- Created `verlet_comprehensive_audit.ipynb` (35,907 bytes, 35 cells: 19 code + 16 markdown).
+- Path: `BASHI+OK/tests/verlet_comprehensive_audit.ipynb`
+- GPU-accelerated with JAX (T4/P100), accelerator metadata set.
+- 14 sections: Verlet correctness + A/B perf, force laws (F=-gradU, Newton3, WCA), FDT, ideal chain, COM diffusion D_cm=kBT/(N*gamma), MSD g1/g2/g3 exponents, Rouse mode spectrum (tau_p ~ 1/p^2), Rg2 scaling (nu_eff), bond stats at dt=0.001, dt convergence, 8-replica stability, equilibration stationarity, equilibrium stats vs exact MC, summary dashboard + JSON forensic report.
+
+### 2. Key Findings
+
+- Verlet optimization does NOT change physics. WCA cutoff still applied to current positions inside force kernel.
+- Production path (harmonic, dt=0.001): all REPO checks PASS at commit 6ade6b6.
+- dt=0.0005 bvar FAIL is non-production artifact. Production default is dt=0.001.
+- configs/default.yaml bond comment wrong: says 1.06 sigma (FENE k=30). Correct for harmonic k=100 is approx 1.025 sigma.
+- Underdamped simulator wiring gap: integrator.type='underdamped' not wired through NumpySimulator config.
+
+### 3. Files Created/Modified
+
+- CREATED: `BASHI+OK/tests/verlet_comprehensive_audit.ipynb`
+- CREATED: Artifact `C:\Users\sairi\.gemini\antigravity\brain\fd6fc782-1bad-4a34-8076-d6c46cbee434\audit_report.md`
+- UPDATED: `BASHI+OK/logs/activity_log.md` (this entry)
+
+---
+### Session: 2026-11-18 08:31 — FENE + Underdamped notebook fixes
+
+**Changes applied (fix_other_nbs.py):**
+
+**FENE (ene-audit-kaggle-ipynb.ipynb):**
+- Config cell: REPO_SIM_DT changed 2e-4 → 5e-4 (safer for FENE stability, faster on Kaggle GPU)
+- STEP R cell: POST-OPTIMIZATION NOTE added — explains backward-compatible API (new 
+eighbor_pairs kwarg defaults to None), WCA_ON_BONDS FAIL is expected (design mismatch, not a Verlet regression)
+- Size: 302,325 bytes | JSON valid | 51 cells
+
+**Underdamped (underdamped-langevin-audit-kaggle-ipynb.ipynb):**
+- Config cell: POST-OPTIMIZATION NOTE added — documents U2 wiring FAIL is expected (predates Verlet optimization, not a regression)
+- STEP R cell: POST-OPTIMIZATION NOTE added — explains NumpySimulator now uses Verlet internally, U1 integrator tests unaffected
+- Size: 274,766 bytes | JSON valid | 49 cells
+
+**Run plan confirmed (all 4 notebooks ready):**
+1. erlet_comprehensive_audit.ipynb — PRIMARY (Verlet + all physics at 462d5ef)
+2. 
+ouse-scaling-fdt-audit-kaggle-ipynb.ipynb — dt=0.001 fixed, STEP R imports repo classes
+3. ene-audit-kaggle-ipynb.ipynb — Optional; expect FENE KG WCA_ON_BONDS FAIL (by design)
+4. underdamped-langevin-audit-kaggle-ipynb.ipynb — Optional; expect U2 wiring FAIL (predates fix)
+
+---
+### Session: 2026-11-18 08:48 — Notebooks updated to new chain-length plan
+
+**New chain-length plan from image:**
+| N | Role | Regime | Trajs |
+|---|---|---|---|
+| 60 | Sub-primary OOD | Pure Rouse | 125 |
+| 80 | Sub-primary OOD | Rouse | 125 |
+| 100 | Sub-primary OOD | Near N_e | 150 |
+| **120** | **PRIMARY** | **Entanglement crossover** | **600** |
+| 130 | Super-primary OOD | Entanglement cross. | 125 |
+| 140 | Super-primary OOD | Entanglement cross. | 150 |
+| 150 | Super-primary OOD | Deeper entanglement | 150 |
+| **Total** | | | **1,325** |
+
+**Changes applied to all 4 notebooks:**
+
+**verlet_comprehensive_audit.ipynb (26 targeted changes):**
+- Sec 0: plan table injected
+- Sec 1a: N list extended to include 120
+- Sec 1b/11: Primary stability test N=30->N=120
+- Sec 4: Ideal-chain N list [10,30]->[60,120]
+- Sec 5: COM diffusion N list [5,10,20,30,50]->[60,80,100,120]
+- Sec 6: MSD N=30->N=80 (pure Rouse for fast convergence; note for N=120)
+- Sec 7: Rouse modes N=30->N=80
+- Sec 8: Rg2 scaling N list [5,10,20,30,50,100]->[60,80,100,120,130,140,150]
+- Sec 10: dt convergence N=20->N=60
+- Sec 12: Equilibration N=30->N=120
+- Sec 13: MC comparison N=60
+
+**rouse-scaling-fdt-audit-kaggle-ipynb.ipynb (6 changes):**
+- N_VALUES: [5,7,10,15,20,30,40,55,75,100] -> [60,80,100,120,130,140,150]
+- N_REF: 30 -> 120 (PRIMARY)
+- RELAX_N: [N_REF,55] -> [80,120]
+- MC_N: [5,10,20,30,55] -> [60,80,100]
+- QUICK_TEST N_VALUES -> [60,80,100]
+- QUICK_TEST RELAX_N -> [80]
+
+**fene-audit-kaggle-ipynb.ipynb (1 change):**
+- REPO_SIM_N: 5 -> 120 (PRIMARY, entanglement crossover)
+- Plan note injected: N_e~85 for KG FENE, N=120 definitively in crossover
+
+**underdamped-langevin-audit-kaggle-ipynb.ipynb (7 changes):**
+- N_VALUES -> [60,80,100,120,130,140,150]
+- N_REF -> 120
+- RELAX_N -> [80,120]
+- VACF_N: [10,20,30] -> [80,120]
+- MC_N -> [60,80,100]
+- QUICK_TEST N_VALUES -> [60,80,100]
+- QUICK_TEST RELAX_N -> [80]
+
+**All notebooks verified:** Valid JSON, N=120 present, old N=30 primary removed.
+
+---
+## Session 2026-11-20 20:58
+### Added to LaTeX report
+- Sec: Training Data Generation Plan (Table: N=60-150 plan, rationale, Rouse-time estimates)
+- Sec: Kaggle Notebook Time Complexity (4 tables, one per notebook, with section-level O() breakdown)
+- Physics-claims paper-evidence table (8 observables x 4 notebooks)
+- Recommended GPU run order (NB1?NB2?NB4?NB3)
+- File: BASHI+OK/logs/simulator_optimization_report.tex (39,091 ? 51,485 bytes, 880 ? 1,167 lines)
+
+
+---
+## Session 2026-11-20 23:25
+### LaTeX Compilation & PDF Generation
+- Resolved TikZ node line-break syntax error (\	ext centered\ -> \lign=center\)
+- Fixed macro definition for \\good\ and \\bad\ to properly handle math mode vs text mode
+- Resolved undefined reference labels
+- Successfully compiled full 20-page PDF via Tectonic engine
+- Output file: BASHI+OK/logs/simulator_optimization_report.pdf (191,805 bytes, 20 pages)
+
+
+---
+## Session 2026-11-24 21:56
+### Full Report Completion & Verification
+- Re-architected report structure into 11 coherent main sections and 3 formal appendices
+- Added Section 10: Downstream Physics-Informed GNN (PINN) Integration (graph construction from polymer conformations, SE(3)-equivariant message passing, multi-objective physics-informed loss function, and OOD extrapolation protocol)
+- Added Appendix B: Formal Algorithmic Formulations (Algorithm 1: Dynamic Verlet Neighbor List with displacement guard, Algorithm 2: Vectorized WCA with numerical clamping, Algorithm 3: Chunked Asynchronous HOOMD Stepping with SHA-256)
+- Added Appendix C: Analytical Derivations & Physical Benchmarks (Discrete Euler-Maruyama FDT Lyapunov derivation, Rouse relaxation spectrum matrix proof, Green-Kubo and Einstein diffusion equivalence)
+- Expanded Bibliography with equivariant GNN and PINN literature (Raissi, Batzner/NequIP, Sanchez-Gonzalez, Kipf, Sch�tt/SchNet)
+- Compiled directly via Tectonic into a complete 28-page PDF: BASHI+OK/logs/simulator_optimization_report.pdf (243 KB)
+
+
+---
+## Session 2026-11-24 22:10
+### Code Updates Matching Report Specifications
+- Implemented underdamped Langevin integration in NumpySimulator (Maxwell-Boltzmann velocity sampling, zero COM drift, velocity and kinetic temperature tracking in frames)
+- Vectorized chain initialization (linear & random walk) using np.cumsum and SIMD normal sampling
+- Vectorized bond observable calculations using NumPy slice differences
+- Implemented single-pass trajectory serialization with in-memory SHA-256 calculation
+- Cached git commit hash in NumpySimulator.__init__
+- Added test_underdamped_simulator_runs to tests/test_simulator.py
+- Full test suite verified: 155 passed out of 155 tests (100% pass rate)
+- Updated simulator_optimization_report.tex and recompiled simulator_optimization_report.pdf (28 pages)
+
